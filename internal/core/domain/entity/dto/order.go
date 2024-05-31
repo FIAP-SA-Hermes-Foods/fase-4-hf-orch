@@ -7,8 +7,8 @@ import (
 
 type OrderDB struct {
 	ID               int64             `json:"id,omitempty"`
-	ClientUUID       string            `json:"clientUuid,omitempty"`
-	VoucherUUID      string            `json:"voucherUuid,omitempty"`
+	ClientUUID       string            `json:"clientId,omitempty"`
+	VoucherUUID      string            `json:"voucherId,omitempty"`
 	Items            []OutputOrderItem `json:"items,omitempty"`
 	Status           string            `json:"status,omitempty"`
 	VerificationCode string            `json:"verificationCode,omitempty"`
@@ -18,8 +18,8 @@ type OrderDB struct {
 type (
 	RequestOrder struct {
 		ID               int64             `json:"id,omitempty"`
-		ClientUUID       string            `json:"clientUuid,omitempty"`
-		VoucherUUID      string            `json:"voucherUuid,omitempty"`
+		ClientUUID       string            `json:"clientId,omitempty"`
+		VoucherUUID      string            `json:"voucherId,omitempty"`
 		Items            []OutputOrderItem `json:"items,omitempty"`
 		Status           string            `json:"status,omitempty"`
 		VerificationCode string            `json:"verificationCode,omitempty"`
@@ -28,8 +28,8 @@ type (
 
 	OutputOrder struct {
 		ID               int64             `json:"id,omitempty"`
-		ClientUUID       string            `json:"clientUuid,omitempty"`
-		VoucherUUID      string            `json:"voucherUuid,omitempty"`
+		ClientUUID       string            `json:"clientId,omitempty"`
+		VoucherUUID      string            `json:"voucherId,omitempty"`
 		Items            []OutputOrderItem `json:"items,omitempty"`
 		Status           string            `json:"status,omitempty"`
 		VerificationCode string            `json:"verificationCode,omitempty"`

@@ -46,6 +46,7 @@ func (o orderRPC) SaveOrder(order dto.RequestOrder) (*dto.OutputOrder, error) {
 	input := op.CreateOrderRequest{
 		ClientUuid:  order.ClientUUID,
 		VoucherUuid: order.VoucherUUID,
+		Status:      order.Status,
 		Items:       items,
 	}
 

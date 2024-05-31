@@ -46,7 +46,7 @@ func (v voucherRPC) GetVoucherByID(id string) (*dto.OutputVoucher, error) {
 	}
 
 	var out = dto.OutputVoucher{
-		ID:         resp.Uuid,
+		UUID:       resp.Uuid,
 		Code:       resp.Code,
 		Percentage: resp.Percentage,
 		CreatedAt:  resp.CreatedAt,
@@ -80,7 +80,7 @@ func (v voucherRPC) SaveVoucher(voucher dto.RequestVoucher) (*dto.OutputVoucher,
 	}
 
 	var out = dto.OutputVoucher{
-		ID:         resp.Uuid,
+		UUID:       resp.Uuid,
 		Code:       resp.Code,
 		Percentage: resp.Percentage,
 		CreatedAt:  resp.CreatedAt,
@@ -116,7 +116,7 @@ func (v voucherRPC) UpdateVoucherByID(id string, voucher dto.RequestVoucher) (*d
 	}
 
 	var out = dto.OutputVoucher{
-		ID:         resp.Uuid,
+		UUID:       resp.Uuid,
 		Code:       resp.Code,
 		Percentage: resp.Percentage,
 		CreatedAt:  resp.CreatedAt,

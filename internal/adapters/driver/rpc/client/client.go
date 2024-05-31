@@ -47,6 +47,10 @@ func (c clientRPC) SaveClient(client dto.RequestClient) (*dto.OutputClient, erro
 		return nil, err
 	}
 
+	if resp == nil {
+		return nil, err
+	}
+
 	var out = dto.OutputClient{
 		UUID:      resp.Uuid,
 		Name:      resp.Name,
@@ -76,6 +80,46 @@ func (c clientRPC) GetClientByCPF(cpf string) (*dto.OutputClient, error) {
 	resp, err := cc.GetClientByCPF(c.ctx, &input)
 
 	if err != nil {
+		return nil, err
+	}
+
+	if resp == nil {
+		return nil, err
+	}
+
+	var out = dto.OutputClient{
+		UUID:      resp.Uuid,
+		Name:      resp.Name,
+		CPF:       resp.Cpf,
+		Email:     resp.Email,
+		CreatedAt: resp.CreatedAt,
+	}
+
+	return &out, nil
+}
+
+func (c clientRPC) GetClientByID(uuid string) (*dto.OutputClient, error) {
+	conn, err := grpc.NewClient(fmt.Sprintf("%s:%s", c.host, c.port), grpc.WithTransportCredentials(insecure.NewCredentials()))
+
+	if err != nil {
+		panic(err)
+	}
+
+	defer conn.Close()
+
+	input := op.GetClientByIDRequest{
+		Uuid: uuid,
+	}
+
+	cc := op.NewClientClient(conn)
+
+	resp, err := cc.GetClientByID(c.ctx, &input)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if resp == nil {
 		return nil, err
 	}
 

@@ -51,9 +51,9 @@ func main() {
 	clientRPC := clientrpc.NewClientRPC(ctx, os.Getenv("HOST_CLIENT"), os.Getenv("PORT_CLIENT"))
 	orderRPC := orderrpc.NewOrderRPC(ctx, os.Getenv("HOST_ORDER"), os.Getenv("PORT_ORDER"))
 	productRPC := productrpc.NewProductRPC(ctx, os.Getenv("HOST_PRODUCT"), os.Getenv("PORT_PRODUCT"))
-	voucherRPC := voucherrpc.NewVoucherRPC(ctx, os.Getenv("HOST_PRODUCT"), os.Getenv("PORT_PRODUCT"))
+	voucherRPC := voucherrpc.NewVoucherRPC(ctx, os.Getenv("HOST_VOUCHER"), os.Getenv("PORT_VOUCHER"))
 
-	app := application.NewApplication(clientRPC, orderRPC, productRPC, voucherRPC, paymentAPI)
+	app := application.NewApplication(ctx, clientRPC, orderRPC, productRPC, voucherRPC, paymentAPI)
 
 	h := httpH.NewHandler(app)
 

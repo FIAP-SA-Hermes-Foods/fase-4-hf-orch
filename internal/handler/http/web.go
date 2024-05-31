@@ -3,7 +3,6 @@ package http
 import (
 	"errors"
 	"net/http"
-	"strconv"
 	"strings"
 )
 
@@ -53,11 +52,7 @@ func validRoute(route, requestRoute, method string) (bool, string, string) {
 	}
 
 	if idParamVal != "" {
-		if _, err := strconv.Atoi(idParamVal); err != nil {
-			return false, "", ""
-		} else {
-			isValid = true
-		}
+		isValid = true
 	}
 
 	var methodReturn string

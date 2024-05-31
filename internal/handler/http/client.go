@@ -10,8 +10,35 @@ import (
 	"strings"
 )
 
+func (h handler) getClientByID(rw http.ResponseWriter, req *http.Request) {
+	id := getID("client", req.URL.Path)
+
+	c, err := h.app.GetClientByID(id)
+
+	if err != nil {
+		rw.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprintf(rw, `{"error": "error to get client by ID: %v"} `, err)
+		return
+	}
+
+	if c == nil {
+		rw.WriteHeader(http.StatusNotFound)
+		rw.Write([]byte(`{"error": "client not found"}`))
+		return
+	}
+
+	rw.WriteHeader(http.StatusOK)
+	rw.Write([]byte(ps.MarshalString(c)))
+}
+
 func (h handler) getClientByCPF(rw http.ResponseWriter, req *http.Request) {
-	cpf := getCpf(req.URL.Path)
+	cpf := req.URL.Query().Get("cpf")
+
+	if len(cpf) == 0 {
+		rw.WriteHeader(http.StatusBadRequest)
+		fmt.Fprint(rw, `{"error": "cpf is invalid or null"} `)
+		return
+	}
 
 	c, err := h.app.GetClientByCPF(cpf)
 

@@ -147,6 +147,41 @@ func (p productRPC) GetProductByCategory(category string) ([]dto.OutputProduct, 
 	return out, nil
 }
 
+func (p productRPC) GetProductByID(uuid string) (*dto.OutputProduct, error) {
+	conn, err := grpc.NewClient(fmt.Sprintf("%s:%s", p.host, p.port), grpc.WithTransportCredentials(insecure.NewCredentials()))
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer conn.Close()
+
+	input := op.GetProductByIDRequest{
+		Uuid: uuid,
+	}
+
+	cc := op.NewProductClient(conn)
+
+	resp, err := cc.GetProductByID(p.ctx, &input)
+
+	if err != nil {
+		return nil, err
+	}
+
+	out := &dto.OutputProduct{
+		UUID:          resp.Uuid,
+		Name:          resp.Name,
+		Category:      resp.Category,
+		Image:         resp.Image,
+		Description:   resp.Description,
+		Price:         float64(resp.Price),
+		CreatedAt:     resp.CreatedAt,
+		DeactivatedAt: resp.DeactivatedAt,
+	}
+
+	return out, nil
+}
+
 func (p productRPC) DeleteProductByID(id string) error {
 	conn, err := grpc.NewClient(fmt.Sprintf("%s:%s", p.host, p.port), grpc.WithTransportCredentials(insecure.NewCredentials()))
 
@@ -156,13 +191,13 @@ func (p productRPC) DeleteProductByID(id string) error {
 
 	defer conn.Close()
 
-	input := op.DeleteProductByUUIDRequest{
+	input := op.DeleteProductByIDRequest{
 		Uuid: id,
 	}
 
 	cc := op.NewProductClient(conn)
 
-	if _, err := cc.DeleteProductByUUID(p.ctx, &input); err != nil {
+	if _, err := cc.DeleteProductByID(p.ctx, &input); err != nil {
 		return err
 	}
 

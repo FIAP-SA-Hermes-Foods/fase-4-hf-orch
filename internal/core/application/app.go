@@ -8,6 +8,7 @@ import (
 	"fase-4-hf-orch/internal/core/domain/entity"
 	"fase-4-hf-orch/internal/core/domain/entity/dto"
 	vo "fase-4-hf-orch/internal/core/domain/entity/valueObject"
+	"math"
 
 	httpi "fase-4-hf-orch/internal/core/domain/http"
 	"fase-4-hf-orch/internal/core/domain/rpc"
@@ -16,6 +17,7 @@ import (
 )
 
 type Application interface {
+	GetClientByID(id string) (*dto.OutputClient, error)
 	GetClientByCPF(cpf string) (*dto.OutputClient, error)
 	SaveClient(client dto.RequestClient) (*dto.OutputClient, error)
 
@@ -24,6 +26,7 @@ type Application interface {
 	GetOrders() ([]dto.OutputOrderApp, error)
 	GetOrderByID(id int64) (*dto.OutputOrderApp, error)
 
+	GetProductByID(uuid string) (*dto.OutputProduct, error)
 	SaveProduct(product dto.RequestProduct) (*dto.OutputProduct, error)
 	UpdateProductByID(id string, product dto.RequestProduct) (*dto.OutputProduct, error)
 	GetProductByCategory(category string) ([]dto.OutputProduct, error)
@@ -43,8 +46,9 @@ type application struct {
 	paymentAPI httpi.PaymentAPI
 }
 
-func NewApplication(clientRPC rpc.ClientRPC, orderRPC rpc.OrderRPC, productRPC rpc.ProductRPC, voucherRPC rpc.VoucherRPC, paymentAPI httpi.PaymentAPI) Application {
+func NewApplication(ctx context.Context, clientRPC rpc.ClientRPC, orderRPC rpc.OrderRPC, productRPC rpc.ProductRPC, voucherRPC rpc.VoucherRPC, paymentAPI httpi.PaymentAPI) Application {
 	return application{
+		ctx:        ctx,
 		clientRPC:  clientRPC,
 		orderRPC:   orderRPC,
 		productRPC: productRPC,
@@ -55,9 +59,9 @@ func NewApplication(clientRPC rpc.ClientRPC, orderRPC rpc.OrderRPC, productRPC r
 
 // ========== Client ==========
 
-func (app application) GetClientByCPF(cpf string) (*dto.OutputClient, error) {
-	l.Infof("GetClientByIDApp: ", " | ", cpf)
-	c, err := app.clientRPC.GetClientByCPF(cpf)
+func (app application) GetClientByID(uuid string) (*dto.OutputClient, error) {
+	l.Infof("GetClientByIDApp: ", " | ", uuid)
+	c, err := app.clientRPC.GetClientByID(uuid)
 
 	if err != nil {
 		l.Errorf("GetClientByIDApp error: ", " | ", err)
@@ -70,6 +74,24 @@ func (app application) GetClientByCPF(cpf string) (*dto.OutputClient, error) {
 	}
 
 	l.Infof("GetClientByIDApp output: ", " | ", ps.MarshalString(c))
+	return c, err
+}
+
+func (app application) GetClientByCPF(cpf string) (*dto.OutputClient, error) {
+	l.Infof("GetClientByCPFApp: ", " | ", cpf)
+	c, err := app.clientRPC.GetClientByCPF(cpf)
+
+	if err != nil {
+		l.Errorf("GetClientByCPFApp error: ", " | ", err)
+		return nil, err
+	}
+
+	if c == nil {
+		l.Infof("GetClientByCPFApp output: ", " | ", nil)
+		return nil, nil
+	}
+
+	l.Infof("GetClientByCPFApp output: ", " | ", ps.MarshalString(c))
 	return c, err
 }
 
@@ -119,7 +141,7 @@ func (app application) UpdateOrderByID(id int64, order dto.RequestOrder) (*dto.O
 		return nil, errors.New("order is null, is not possible to proceed with update order")
 	}
 
-	client, err := app.GetClientByCPF(oSvc.ClientUUID)
+	client, err := app.GetClientByID(oSvc.ClientUUID)
 
 	if err != nil {
 		l.Errorf("UpdateOrderByIDApp error: ", " | ", err)
@@ -164,7 +186,7 @@ func (app application) GetOrders() ([]dto.OutputOrderApp, error) {
 
 	for i := range orders {
 
-		client, err := app.GetClientByCPF(orders[i].ClientUUID)
+		client, err := app.GetClientByID(orders[i].ClientUUID)
 
 		if err != nil {
 			l.Errorf("GetOrdersApp error: ", " | ", err)
@@ -175,7 +197,6 @@ func (app application) GetOrders() ([]dto.OutputOrderApp, error) {
 
 		for oItemIdx := range orders[i].Items {
 			if orders[i].Items[oItemIdx].OrderID == orders[i].ID {
-
 				orderItemList = append(orderItemList, orders[i].Items[oItemIdx])
 			}
 		}
@@ -187,7 +208,6 @@ func (app application) GetOrders() ([]dto.OutputOrderApp, error) {
 		var voucher = dto.OutputVoucher{}
 
 		if len(orders[i].VoucherUUID) > 0 {
-
 			v, err := app.GetVoucherByID(orders[i].VoucherUUID)
 
 			if err != nil {
@@ -205,43 +225,20 @@ func (app application) GetOrders() ([]dto.OutputOrderApp, error) {
 
 		for _, op := range orderItemList {
 			if len(op.ProductUUID) > 0 {
-
-				meal, errGetMeal := app.GetProductByCategory("meal")
-				if errGetMeal != nil {
-					l.Errorf("GetOrdersApp error: ", " | ", errGetMeal)
-					return nil, errGetMeal
+				product, err := app.GetProductByID(op.ProductUUID)
+				if err != nil {
+					return nil, err
 				}
 
-				for i := range meal {
-					if meal[i].UUID == op.ProductUUID {
-						productList = append(productList, meal[i])
-					}
+				if product == nil {
+					continue
 				}
+				if product.UUID == op.ProductUUID {
+					product.Price = math.Round(product.Price*100) / 100
+					productList = append(productList, *product)
+					tPrice := getTotalPrice(op.Quantity, product.Price)
+					totalPrice = totalPrice + tPrice
 
-				drink, errGetDrink := app.GetProductByCategory("drink")
-				if errGetDrink != nil {
-					l.Errorf("GetOrdersApp error: ", " | ", errGetDrink)
-					return nil, errGetDrink
-				}
-
-				for i := range drink {
-					if drink[i].UUID == op.ProductUUID {
-						productList = append(productList, drink[i])
-					}
-				}
-
-				complement, errGetComplement := app.GetProductByCategory("complement")
-				if errGetComplement != nil {
-					l.Errorf("GetOrdersApp error: ", " | ", errGetComplement)
-					return nil, errGetComplement
-				}
-
-				for i := range complement {
-					if meal[i].UUID == op.ProductUUID {
-
-						totalPrice = totalPrice + getTotalPrice(op.Quantity, meal[i].Price)
-						productList = append(productList, meal[i])
-					}
 				}
 			}
 		}
@@ -291,7 +288,7 @@ func (app application) GetOrderByID(id int64) (*dto.OutputOrderApp, error) {
 		return nil, nil
 	}
 
-	client, err := app.GetClientByCPF(orders.ClientUUID)
+	client, err := app.GetClientByID(orders.ClientUUID)
 
 	if err != nil {
 		l.Errorf("GetOrdersApp error: ", " | ", err)
@@ -302,7 +299,6 @@ func (app application) GetOrderByID(id int64) (*dto.OutputOrderApp, error) {
 
 	for oItemIdx := range orders.Items {
 		if orders.Items[oItemIdx].OrderID == orders.ID {
-
 			orderItemList = append(orderItemList, orders.Items[oItemIdx])
 		}
 	}
@@ -332,44 +328,21 @@ func (app application) GetOrderByID(id int64) (*dto.OutputOrderApp, error) {
 
 	for _, op := range orderItemList {
 		if len(op.ProductUUID) > 0 {
-
-			meal, errGetMeal := app.GetProductByCategory("meal")
-			if errGetMeal != nil {
-				l.Errorf("GetOrdersApp error: ", " | ", errGetMeal)
-				return nil, errGetMeal
+			product, err := app.GetProductByID(op.ProductUUID)
+			if err != nil {
+				return nil, err
 			}
 
-			for i := range meal {
-				if meal[i].UUID == op.ProductUUID {
-					productList = append(productList, meal[i])
-				}
+			if product == nil {
+				continue
+			}
+			if product.UUID == op.ProductUUID {
+				product.Price = math.Round(product.Price*100) / 100
+				productList = append(productList, *product)
+				tPrice := getTotalPrice(op.Quantity, product.Price)
+				totalPrice = totalPrice + tPrice
 			}
 
-			drink, errGetDrink := app.GetProductByCategory("drink")
-			if errGetDrink != nil {
-				l.Errorf("GetOrdersApp error: ", " | ", errGetDrink)
-				return nil, errGetDrink
-			}
-
-			for i := range drink {
-				if drink[i].UUID == op.ProductUUID {
-					productList = append(productList, drink[i])
-				}
-			}
-
-			complement, errGetComplement := app.GetProductByCategory("complement")
-			if errGetComplement != nil {
-				l.Errorf("GetOrdersApp error: ", " | ", errGetComplement)
-				return nil, errGetComplement
-			}
-
-			for i := range complement {
-				if meal[i].UUID == op.ProductUUID {
-
-					totalPrice = totalPrice + getTotalPrice(op.Quantity, meal[i].Price)
-					productList = append(productList, meal[i])
-				}
-			}
 		}
 	}
 
@@ -388,7 +361,7 @@ func (app application) GetOrderByID(id int64) (*dto.OutputOrderApp, error) {
 		},
 		Voucher:          &voucher,
 		Products:         productList,
-		TotalPrice:       totalPrice,
+		TotalPrice:       math.Round(totalPrice*100) / 100,
 		Status:           orders.Status,
 		VerificationCode: orders.VerificationCode,
 		CreatedAt:        orders.CreatedAt,
@@ -401,7 +374,7 @@ func (app application) GetOrderByID(id int64) (*dto.OutputOrderApp, error) {
 func (app application) SaveOrder(order dto.RequestOrder) (*dto.OutputOrderApp, error) {
 	l.Infof("SaveOrderApp: ", " | ", ps.MarshalString(order))
 
-	c, err := app.GetClientByCPF(order.ClientUUID)
+	c, err := app.GetClientByID(order.ClientUUID)
 
 	if err != nil {
 		l.Errorf("SaveOrderApp error: ", " | ", err)
@@ -423,19 +396,19 @@ func (app application) SaveOrder(order dto.RequestOrder) (*dto.OutputOrderApp, e
 		},
 	}
 
-	out, err := app.DoPaymentAPI(app.ctx, inputDoPaymentAPI)
+	outPayment, err := app.DoPaymentAPI(app.ctx, inputDoPaymentAPI)
 
 	if err != nil {
 		l.Errorf("SaveOrderApp error: ", " | ", err)
 		return nil, err
 	}
 
-	if out.Error != nil {
-		l.Errorf("SaveOrderApp error: ", " | ", out.Error.Message, " | ", out.Error.Code)
-		return nil, fmt.Errorf("error to do payment message: %s, code: %s", out.Error.Message, out.Error.Code)
+	if outPayment.Error != nil {
+		l.Errorf("SaveOrderApp error: ", " | ", outPayment.Error.Message, " | ", outPayment.Error.Code)
+		return nil, fmt.Errorf("error to do payment message: %s, code: %s", outPayment.Error.Message, outPayment.Error.Code)
 	}
 
-	order.Status = out.PaymentStatus
+	order.Status = outPayment.PaymentStatus
 
 	o, err := app.orderRPC.SaveOrder(order)
 
@@ -475,7 +448,6 @@ func (app application) SaveOrder(order dto.RequestOrder) (*dto.OutputOrderApp, e
 
 	for oItemIdx := range order.Items {
 		if order.Items[oItemIdx].OrderID == order.ID {
-
 			orderItemList = append(orderItemList, order.Items[oItemIdx])
 		}
 	}
@@ -484,43 +456,20 @@ func (app application) SaveOrder(order dto.RequestOrder) (*dto.OutputOrderApp, e
 
 	for _, op := range orderItemList {
 		if len(op.ProductUUID) > 0 {
-
-			meal, errGetMeal := app.GetProductByCategory("meal")
-			if errGetMeal != nil {
-				l.Errorf("GetOrdersApp error: ", " | ", errGetMeal)
-				return nil, errGetMeal
+			product, err := app.GetProductByID(op.ProductUUID)
+			if err != nil {
+				return nil, err
 			}
 
-			for i := range meal {
-				if meal[i].UUID == op.ProductUUID {
-					productList = append(productList, meal[i])
-				}
+			if product == nil {
+				continue
 			}
 
-			drink, errGetDrink := app.GetProductByCategory("drink")
-			if errGetDrink != nil {
-				l.Errorf("GetOrdersApp error: ", " | ", errGetDrink)
-				return nil, errGetDrink
-			}
-
-			for i := range drink {
-				if drink[i].UUID == op.ProductUUID {
-					productList = append(productList, drink[i])
-				}
-			}
-
-			complement, errGetComplement := app.GetProductByCategory("complement")
-			if errGetComplement != nil {
-				l.Errorf("GetOrdersApp error: ", " | ", errGetComplement)
-				return nil, errGetComplement
-			}
-
-			for i := range complement {
-				if meal[i].UUID == op.ProductUUID {
-
-					totalPrice = totalPrice + getTotalPrice(op.Quantity, meal[i].Price)
-					productList = append(productList, meal[i])
-				}
+			if product.UUID == op.ProductUUID {
+				product.Price = math.Round(product.Price*100) / 100
+				productList = append(productList, *product)
+				tPrice := getTotalPrice(op.Quantity, product.Price)
+				totalPrice = totalPrice + tPrice
 			}
 		}
 	}
@@ -551,6 +500,36 @@ func (app application) SaveOrder(order dto.RequestOrder) (*dto.OutputOrderApp, e
 }
 
 // ========== Product ==========
+
+func (app application) GetProductByID(uuid string) (*dto.OutputProduct, error) {
+	l.Infof("GetProductByIDApp: ", " | ", uuid)
+
+	productRpc, err := app.productRPC.GetProductByID(uuid)
+
+	if err != nil {
+		l.Errorf("GetProductByIDApp error: ", " | ", err)
+		return nil, err
+	}
+
+	if productRpc == nil {
+		l.Infof("GetProductByIDApp output: ", " | ", nil)
+		return nil, nil
+	}
+
+	product := &dto.OutputProduct{
+		UUID:          productRpc.UUID,
+		Name:          productRpc.Name,
+		Category:      productRpc.Category,
+		Image:         productRpc.Image,
+		Description:   productRpc.Description,
+		Price:         productRpc.Price,
+		CreatedAt:     productRpc.CreatedAt,
+		DeactivatedAt: productRpc.CreatedAt,
+	}
+
+	l.Infof("GetProductByIDApp output: ", " | ", product)
+	return product, nil
+}
 
 func (app application) SaveProduct(product dto.RequestProduct) (*dto.OutputProduct, error) {
 	l.Infof("SaveProductApp: ", " | ", ps.MarshalString(product))
@@ -673,7 +652,7 @@ func (app application) SaveVoucher(voucher dto.RequestVoucher) (*dto.OutputVouch
 	}
 
 	vOut := dto.OutputVoucher{
-		ID:         rVoucher.ID,
+		UUID:       rVoucher.UUID,
 		Code:       rVoucher.Code,
 		Percentage: rVoucher.Percentage,
 		CreatedAt:  rVoucher.CreatedAt,
@@ -701,7 +680,7 @@ func (app application) GetVoucherByID(id string) (*dto.OutputVoucher, error) {
 	}
 
 	vOut := dto.OutputVoucher{
-		ID:         rVoucher.ID,
+		UUID:       rVoucher.UUID,
 		Code:       rVoucher.Code,
 		Percentage: rVoucher.Percentage,
 		CreatedAt:  rVoucher.CreatedAt,
@@ -729,7 +708,7 @@ func (app application) UpdateVoucherByID(id string, voucher dto.RequestVoucher) 
 	}
 
 	vOut := dto.OutputVoucher{
-		ID:         rVoucher.ID,
+		UUID:       rVoucher.UUID,
 		Code:       rVoucher.Code,
 		Percentage: rVoucher.Percentage,
 		CreatedAt:  rVoucher.CreatedAt,

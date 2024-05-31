@@ -5,6 +5,7 @@ import (
 )
 
 type ClientRPC interface {
+	GetClientByID(id string) (*dto.OutputClient, error)
 	GetClientByCPF(cpf string) (*dto.OutputClient, error)
 	SaveClient(client dto.RequestClient) (*dto.OutputClient, error)
 }
@@ -17,6 +18,7 @@ type OrderRPC interface {
 }
 
 type ProductRPC interface {
+	GetProductByID(uuid string) (*dto.OutputProduct, error)
 	SaveProduct(product dto.RequestProduct) (*dto.OutputProduct, error)
 	UpdateProductByID(id string, product dto.RequestProduct) (*dto.OutputProduct, error)
 	GetProductByCategory(category string) ([]dto.OutputProduct, error)

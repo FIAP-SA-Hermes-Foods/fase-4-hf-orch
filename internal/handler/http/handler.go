@@ -23,12 +23,13 @@ func NewHandler(app application.Application) Handler {
 
 func (h handler) HandlerClient(rw http.ResponseWriter, req *http.Request) {
 
-	var routesVoucher = map[string]http.HandlerFunc{
-		"get hermes_foods/client/{cpf}": h.getClientByCPF,
-		"post hermes_foods/client":      h.saveClient,
+	var routes = map[string]http.HandlerFunc{
+		"get hermes_foods/client/{id}": h.getClientByID,
+		"get hermes_foods/client":      h.getClientByCPF,
+		"post hermes_foods/client":     h.saveClient,
 	}
 
-	handler, err := router(req.Method, req.URL.Path, routesVoucher)
+	handler, err := router(req.Method, req.URL.Path, routes)
 
 	if err == nil {
 		handler(rw, req)
@@ -41,14 +42,14 @@ func (h handler) HandlerClient(rw http.ResponseWriter, req *http.Request) {
 
 func (h handler) HandlerProduct(rw http.ResponseWriter, req *http.Request) {
 
-	var routesVoucher = map[string]http.HandlerFunc{
+	var routes = map[string]http.HandlerFunc{
 		"get hermes_foods/product":         h.getProductByCategory,
 		"post hermes_foods/product":        h.saveProduct,
 		"put hermes_foods/product/{id}":    h.UpdateProductByUUID,
 		"delete hermes_foods/product/{id}": h.deleteProductByUUID,
 	}
 
-	handler, err := router(req.Method, req.URL.Path, routesVoucher)
+	handler, err := router(req.Method, req.URL.Path, routes)
 
 	if err == nil {
 		handler(rw, req)
@@ -61,14 +62,14 @@ func (h handler) HandlerProduct(rw http.ResponseWriter, req *http.Request) {
 
 func (h handler) HandlerOrder(rw http.ResponseWriter, req *http.Request) {
 
-	var routesVoucher = map[string]http.HandlerFunc{
+	var routes = map[string]http.HandlerFunc{
 		"get hermes_foods/order":        h.getOrders,
 		"get hermes_foods/order/{id}":   h.getOrderByID,
 		"post hermes_foods/order":       h.saveOrder,
 		"patch hermes_foods/order/{id}": h.updateOrderByID,
 	}
 
-	handler, err := router(req.Method, req.URL.Path, routesVoucher)
+	handler, err := router(req.Method, req.URL.Path, routes)
 
 	if err == nil {
 		handler(rw, req)
@@ -81,13 +82,13 @@ func (h handler) HandlerOrder(rw http.ResponseWriter, req *http.Request) {
 
 func (h handler) HandlerVoucher(rw http.ResponseWriter, req *http.Request) {
 
-	var routesVoucher = map[string]http.HandlerFunc{
+	var routes = map[string]http.HandlerFunc{
 		"get hermes_foods/voucher/{id}": h.getVoucherByID,
 		"post hermes_foods/voucher":     h.saveVoucher,
 		"put hermes_foods/voucher/{id}": h.updateVoucherByID,
 	}
 
-	handler, err := router(req.Method, req.URL.Path, routesVoucher)
+	handler, err := router(req.Method, req.URL.Path, routes)
 
 	if err == nil {
 		handler(rw, req)

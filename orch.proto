@@ -1,6 +1,7 @@
 syntax = "proto3";
 option go_package = "fase-4-hf-orch/orch-proto";
 
+// start CLIENT setup
 message CreateClientRequest {
   string name = 1;
   string cpf = 2;
@@ -15,7 +16,7 @@ message CreateClientResponse {
   string createdAt = 5;
 }
 
-message GetClientByIDRequest { int64 id = 1; }
+message GetClientByIDRequest { string uuid = 1; }
 
 message GetClientByIDResponse {
   string uuid = 1;
@@ -36,10 +37,13 @@ message GetClientByCPFResponse {
 }
 
 service Client {
-  rpc CreateClient(CreateClientRequest) returns (CreateClientResponse);
+  rpc GetClientByID(GetClientByIDRequest) returns (GetClientByIDResponse);
   rpc GetClientByCPF(GetClientByCPFRequest) returns (GetClientByCPFResponse);
+  rpc CreateClient(CreateClientRequest) returns (CreateClientResponse);
 }
+// end CLIENT setup
 
+// start VOUCHER setup
 message CreateVoucherRequest {
   string code = 1;
   int64 percentage = 2;
@@ -86,7 +90,9 @@ service Voucher {
   rpc UpdateVoucherByID(UpdateVoucherByIDRequest)
       returns (UpdateVoucherByIDResponse);
 }
+// end VOUCHER setup
 
+// start ORDER setup
 message Item {
   string productUuid = 1;
   int64 orderId = 2;
@@ -96,7 +102,8 @@ message Item {
 message CreateOrderRequest {
   string clientUuid = 1;
   string voucherUuid = 2;
-  repeated Item items = 3;
+  string status = 3;
+  repeated Item items = 4;
 }
 
 message CreateOrderResponse {
@@ -161,6 +168,21 @@ service Order {
   rpc UpdateOrder(UpdateOrderRequest) returns (UpdateOrderResponse);
   rpc GetOrder(GetOrderRequest) returns (GetOrderResponse);
 }
+// end ORDER setup
+
+// start PRODUCT setup
+message GetProductByIDRequest { string uuid = 1; }
+
+message GetProductByIDResponse {
+  string uuid = 1;
+  string name = 2;
+  string category = 3;
+  string image = 4;
+  string description = 5;
+  float price = 6;
+  string createdAt = 7;
+  string deactivatedAt = 8;
+}
 
 message CreateProductRequest {
   string name = 1;
@@ -222,15 +244,17 @@ message UpdateProductResponse {
   string deactivatedAt = 8;
 }
 
-message DeleteProductByUUIDRequest { string uuid = 1; }
+message DeleteProductByIDRequest { string uuid = 1; }
 
-message DeleteProductByUUIDResponse { string message = 1; }
+message DeleteProductByIDResponse { string message = 1; }
 
 service Product {
+  rpc GetProductByID(GetProductByIDRequest) returns (GetProductByIDResponse);
   rpc CreateProduct(CreateProductRequest) returns (CreateProductResponse);
   rpc GetProductByCategory(GetProductByCategoryRequest)
       returns (GetProductByCategoryResponse);
   rpc UpdateProduct(UpdateProductRequest) returns (UpdateProductResponse);
-  rpc DeleteProductByUUID(DeleteProductByUUIDRequest)
-      returns (DeleteProductByUUIDResponse);
+  rpc DeleteProductByID(DeleteProductByIDRequest)
+      returns (DeleteProductByIDResponse);
 }
+// end PRODUCT setup

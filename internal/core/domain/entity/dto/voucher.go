@@ -8,7 +8,7 @@ import (
 
 type (
 	RequestVoucher struct {
-		ID         string `json:"id,omitempty"`
+		UUID       string `json:"uuid,omitempty"`
 		Code       string `json:"code,omitempty"`
 		Percentage int64  `json:"percentage,omitempty"`
 		CreatedAt  string `json:"createdAt,omitempty"`
@@ -16,7 +16,7 @@ type (
 	}
 
 	OutputVoucher struct {
-		ID         string `json:"id,omitempty"`
+		UUID       string `json:"uuid,omitempty"`
 		Code       string `json:"code,omitempty"`
 		Percentage int64  `json:"percentage,omitempty"`
 		CreatedAt  string `json:"createdAt,omitempty"`
